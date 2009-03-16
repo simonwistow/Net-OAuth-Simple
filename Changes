@@ -1,5 +1,8 @@
 Revision history for Net-OAuth-Simple
 
+0.7 2009-03-15
+        Fix saving of tokens properly
+
 0.6 2009-03-15
         Fix dependencies
 

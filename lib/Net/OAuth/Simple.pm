@@ -3,7 +3,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "0.6";
+our $VERSION = "0.7";
 
 use LWP;
 use CGI;
@@ -382,6 +382,8 @@ sub request_access_token {
     $self->access_token($access_token_response_query->param('oauth_token'));
     $self->access_token_secret($access_token_response_query->param('oauth_token_secret'));
 
+    delete $self->{tokens}->{$_} for qw(request_token request_token_secret);
+
     die "ERROR: $url did not reply with an access token"
       unless ( $self->access_token && $self->access_token_secret );
 
@@ -518,7 +520,7 @@ sub save_tokens {
     my %tokens = @_;
 
     open(my $fh, ">$file") || die "Couldn't open $file for writing: $!\n";
-    foreach my $key (keys %tokens) {
+    foreach my $key (sort keys %tokens) {
         print $fh "$key = ".$tokens{$key}."\n";
     }
     close($fh);
