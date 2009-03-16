@@ -6,8 +6,11 @@ my $build = Module::Build
          license      => 'perl',
          script_files => [ ],
          requires     => {
+                          'Crypt::SSLeay'        => 0,
+                          'CGI'                  => 0,
+                          'LWP::UserAgent'       => 0,
                           'Net::OAuth'           => 0,
-                          'Test::More'           => 0,
+                          'Test::More'           => 0.06,
                         },
          create_makefile_pl => 'traditional',
        );
