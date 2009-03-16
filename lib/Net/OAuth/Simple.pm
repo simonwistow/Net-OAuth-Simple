@@ -390,7 +390,16 @@ sub request_access_token {
     return ( $self->access_token, $self->access_token_secret );
 }
 
-sub _request_request_token {
+=head2 request_request_token
+
+Request the request token and request token secret for this user.
+
+This is called automatically by C<get_authorization_url> if necessary.
+
+=cut
+
+
+sub request_request_token {
     my $self = shift;
     my $url  = $self->request_token_url;       
     my $request_token_response = $self->_make_request(
@@ -420,7 +429,7 @@ sub get_authorization_url {
     my $self = shift;
     my $url  = $self->authorization_url;
     if (!defined $self->request_token) {
-        $self->_request_request_token;
+        $self->request_request_token;
     }
     return $url . '?oauth_token=' . $self->request_token;
 }
@@ -502,6 +511,7 @@ sub load_tokens {
         next if /^#/;
         next if /^\s*$/;
         next unless /=/;
+        s/(^\s*|\s*$)//g;
         my ($key, $val) = split /\s*=\s*/, $_, 2;
         $tokens{$key} = $val;
     }
