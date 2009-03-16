@@ -367,7 +367,6 @@ immediately call C<location> or C<update_location>.
 sub request_access_token {
     my $self = shift;
     my $url  = $self->access_token_url;
-    print STDERR "Getting ACCESS_TOKEN from $url\n";
     my $access_token_response = $self->_make_request(
         'Net::OAuth::AccessTokenRequest',
         $url, 'GET',
