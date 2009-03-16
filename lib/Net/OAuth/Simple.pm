@@ -54,21 +54,20 @@ for you.
 
     sub view_restricted_resource {
         my $self = shift;
-        return $self->make_restriced_request($url, 'GET');
+        return $self->make_restricted_request($url, 'GET');
     }
 
     sub update_restricted_resource {
         my $self = shift
-        return $self->make_restriced_request($url, 'POST', %extra_params);    
+        return $self->make_restricted_request($url, 'POST', %extra_params);    
     }
-
-
     1;
 
 
 Then in your main app you need to do
 
-    my %tokens  = get_tokens();
+    # Get the tokens from the command line, a config file or wherever 
+    my %tokens  = get_tokens(); 
     my $app     = Net::AppThatUsesOAuth->new(%tokens);
 
     # Check to see we have a consumer key and secret
