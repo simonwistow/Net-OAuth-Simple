@@ -3,7 +3,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "0.8";
+our $VERSION = "0.9";
 
 use URI;
 use LWP;
@@ -143,39 +143,6 @@ be a hash ref with the keys
 =item access_token_url
 
 =back
-
-Google's OAuth API requires the non-standard I<scope> parameter to be set in I<request_token_url>, and you also explicitly need to pass I<oauth_callback> to I<get_authorization_url()> method, so that you can direct the user to your site if you're authenticating users in Web Application mode. Otherwise Google will let user to grant acesss as a desktop app mode and doesn't redirect users back.
-
-Here's an example class that uses Google's Portable Contacts API via OAuth:
-
-    package Net::AppUsingGoogleOAuth;
-    use strict;
-    use base qw(Net::OAuth::Simple);
-
-    sub new {
-        my $class  = shift;
-        my %tokens = @_;
-        return $class->SUPER::new(
-            tokens => \%tokens, 
-            urls   => {
-                request_token_url => "https://www.google.com/accounts/OAuthGetRequestToken?scope=http://www-opensocial.googleusercontent.com/api/people",
-                authorization_url => "https://www.google.com/accounts/OAuthAuthorizeToken",
-                access_token_url => "https://www.google.com/accounts/OAuthGetAccessToken",
-            },
-        );
-    }
-
-    package main;
-    my $oauth = Net::AppUsingGoogleOAuth->new(%tokens);
-
-    # Web application
-    $app->redirect( $oauth->get_authorization_url(oauth_callback => "http://you.example.com/oauth/callback") );
-
-    # Desktop application
-    print "Open the URL and come back once you're authenticated!\n",
-        $oauth->get_authorization_url;
-
-See L<http://code.google.com/apis/accounts/docs/OAuth.html> and other services API documentation for the possible list of I<scope> parameter value.
 
 =cut
 
@@ -580,6 +547,46 @@ sub save_tokens {
     }
     close($fh);
 }
+
+=head1 GOOGLE'S SCOPE PARAMETER
+
+Google's OAuth API requires the non-standard C<scope> parameter to be set 
+in C<request_token_url>, and you also explicitly need to pass an C<oauth_callback> 
+to C<get_authorization_url()> method, so that you can direct the user to your site 
+if you're authenticating users in Web Application mode. Otherwise Google will let 
+user grant acesss as a desktop app mode and doesn't redirect users back.
+
+Here's an example class that uses Google's Portable Contacts API via OAuth:
+
+    package Net::AppUsingGoogleOAuth;
+    use strict;
+    use base qw(Net::OAuth::Simple);
+
+    sub new {
+        my $class  = shift;
+        my %tokens = @_;
+        return $class->SUPER::new(
+            tokens => \%tokens, 
+            urls   => {
+                request_token_url => "https://www.google.com/accounts/OAuthGetRequestToken?scope=http://www-opensocial.googleusercontent.com/api/people",
+                authorization_url => "https://www.google.com/accounts/OAuthAuthorizeToken",
+                access_token_url  => "https://www.google.com/accounts/OAuthGetAccessToken",
+            },
+        );
+    }
+
+    package main;
+    my $oauth = Net::AppUsingGoogleOAuth->new(%tokens);
+
+    # Web application
+    $app->redirect( $oauth->get_authorization_url(oauth_callback => "http://you.example.com/oauth/callback") );
+
+    # Desktop application
+    print "Open the URL and come back once you're authenticated!\n",
+        $oauth->get_authorization_url;
+
+See L<http://code.google.com/apis/accounts/docs/OAuth.html> and other 
+services API documentation for the possible list of I<scope> parameter value.
 
 =head1 RANDOMNESS
 
