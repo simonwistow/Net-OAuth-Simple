@@ -144,6 +144,39 @@ be a hash ref with the keys
 
 =back
 
+Google's OAuth API requires the non-standard I<scope> parameter to be set in I<request_token_url>, and you also explicitly need to pass I<oauth_callback> to I<get_authorization_url()> method, so that you can direct the user to your site if you're authenticating users in Web Application mode. Otherwise Google will let user to grant acesss as a desktop app mode and doesn't redirect users back.
+
+Here's an example class that uses Google's Portable Contacts API via OAuth:
+
+    package Net::AppUsingGoogleOAuth;
+    use strict;
+    use base qw(Net::OAuth::Simple);
+
+    sub new {
+        my $class  = shift;
+        my %tokens = @_;
+        return $class->SUPER::new(
+            tokens => \%tokens, 
+            urls   => {
+                request_token_url => "https://www.google.com/accounts/OAuthGetRequestToken?scope=http://www-opensocial.googleusercontent.com/api/people",
+                authorization_url => "https://www.google.com/accounts/OAuthAuthorizeToken",
+                access_token_url => "https://www.google.com/accounts/OAuthGetAccessToken",
+            },
+        );
+    }
+
+    package main;
+    my $oauth = Net::AppUsingGoogleOAuth->new(%tokens);
+
+    # Web application
+    $app->redirect( $oauth->get_authorization_url(oauth_callback => "http://you.example.com/oauth/callback") );
+
+    # Desktop application
+    print "Open the URL and come back once you're authenticated!\n",
+        $oauth->get_authorization_url;
+
+See L<http://code.google.com/apis/accounts/docs/OAuth.html> and other services API documentation for the possible list of I<scope> parameter value.
+
 =cut
 
 sub new {
@@ -472,21 +505,28 @@ sub _make_request {
     my $method  = lc(shift);
     my %extra   = @_;
 
+    my $uri   = URI->new($url);
+    my %query = $uri->query_form;
+    $uri->query_form({});
+
     my $request = $class->new(
         consumer_key     => $self->consumer_key,
         consumer_secret  => $self->consumer_secret,
-        request_url      => $url,
+        request_url      => $uri,
         request_method   => uc($method),
         signature_method => $self->signature_method,
         timestamp        => time,
         nonce            => $self->_nonce,
+        extra_params     => \%query,
         %extra,
     );
     $request->sign;
     die "COULDN'T VERIFY! Check OAuth parameters.\n"
       unless $request->verify;
 
-    my $request_url = $url . '?' . $request->to_post_body;
+    my $params = $request->to_hash;
+    my $request_url = URI->new($url);
+    $request_url->query_form(%$params);
     my $response    = $self->{browser}->$method($request_url);
     die "$method on $request_url failed: ".$response->status_line
       unless ( $response->is_success );
