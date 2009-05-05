@@ -610,9 +610,15 @@ sub save_tokens {
     my $file   = shift;
     my %tokens = @_;
 
+    my $max    = 0;
+    for my $key (keys %tokens) {
+        $max   = length($key) if length($key)>$max;
+    }
+
     open(my $fh, ">$file") || die "Couldn't open $file for writing: $!\n";
     foreach my $key (sort keys %tokens) {
-        print $fh "$key = ".$tokens{$key}."\n";
+        my $pad = " "x($max-length($key));
+        print $fh "$key ${pad}= ".$tokens{$key}."\n";
     }
     close($fh);
 }
