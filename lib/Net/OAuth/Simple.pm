@@ -2,7 +2,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "1.2";
+our $VERSION = "1.3";
 
 use URI;
 use LWP;
@@ -207,7 +207,7 @@ Note that the credentials may be wrong and so the request may still fail.
 sub authorized {
     my $self = shift;
     foreach my $param ( @access_token_params ) {
-        return 0 unless defined $self->{tokens}->{$param};
+        return 0 unless defined $self->{tokens}->{$param} && length $self->{tokens}->{$param};
     }
     return 1;
 }
