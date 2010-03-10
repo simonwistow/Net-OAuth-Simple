@@ -2,7 +2,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "1.3";
+our $VERSION = "1.4";
 
 use URI;
 use LWP;
@@ -552,10 +552,10 @@ sub xauth_request_access_token {
 
 	my %xauth_params = map { $_ => $params{$_} } 
 		grep {/^x_auth_/}
-		@{Net::OAuth::xAuthAccessTokenRequest->required_message_params};
+		@{Net::OAuth::Simple::xAuthAccessTokenRequest->required_message_params};
 
 	my $access_token_response = $self->_make_request(
-		'Net::OAuth::xAuthAccessTokenRequest',
+		'Net::OAuth::Simple::xAuthAccessTokenRequest',
 		$url, 'POST',
 		%xauth_params,
 	);
