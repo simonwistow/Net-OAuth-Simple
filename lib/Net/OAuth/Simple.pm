@@ -7,6 +7,7 @@ our $VERSION = "1.3";
 use URI;
 use LWP;
 use CGI;
+use HTTP::Request::Common ();
 use Carp;
 use Net::OAuth;
 require Net::OAuth::Request;
@@ -504,6 +505,14 @@ sub request_access_token {
 		%params,
     );
 
+	return $self->_decode_tokens($url, $access_token_response);
+}
+
+sub _decode_tokens {
+	my $self                  = shift;
+	my $url                   = shift;
+	my $access_token_response = shift;
+
     # Cast response into CGI query for EZ parameter decoding
     my $access_token_response_query =
       new CGI( $access_token_response->content );
@@ -518,6 +527,40 @@ sub request_access_token {
       unless ( $self->access_token && $self->access_token_secret );
 
     return ( $self->access_token, $self->access_token_secret );
+	
+}
+
+=head2 xauth_request_access_token [param[s]]
+
+The same as C<request_access_token> but for xAuth.
+
+For more information on xAuth see
+
+	http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-oauth-access_token-for-xAuth  
+
+You must pass in the parameters
+
+	x_auth_username
+	x_auth_password
+	x_auth_mode
+
+=cut
+sub xauth_request_access_token {
+    my $self = shift;
+	my %params = @_;
+	my $url = $self->access_token_url;
+
+	my %xauth_params = map { $_ => $params{$_} } 
+		grep {/^x_auth_/}
+		@{Net::OAuth::xAuthAccessTokenRequest->required_message_params};
+
+	my $access_token_response = $self->_make_request(
+		'Net::OAuth::xAuthAccessTokenRequest',
+		$url, 'POST',
+		%xauth_params,
+	);
+
+	return $self->_decode_tokens($url, $access_token_response);
 }
 
 =head2 request_request_token [param[s]]
