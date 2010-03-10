@@ -14,7 +14,7 @@ require Net::OAuth::Request;
 require Net::OAuth::RequestTokenRequest;
 require Net::OAuth::AccessTokenRequest;
 require Net::OAuth::ProtectedResourceRequest;
-
+require Net::OAuth::Simple::xAuthAccessTokenRequest;
 
 BEGIN {
     eval {  require Math::Random::MT };
