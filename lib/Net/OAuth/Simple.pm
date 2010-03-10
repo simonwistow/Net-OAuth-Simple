@@ -660,10 +660,16 @@ sub _make_request {
       unless $request->verify;
 
     my $params = $request->to_hash;
-    my $request_url = URI->new($url);
-    $request_url->query_form(%$params);
-    my $response    = $self->{browser}->$method($request_url);
-    die "$method on $request_url failed: ".$response->status_line
+ 	my $req;
+	if ($method eq 'post') {
+ 		$req = HTTP::Request::Common::POST($uri, Content => $params);
+	} else {
+ 		my $request_url = URI->new($url);
+		$request_url->query_form(%$params);
+		$req = HTTP::Request::Common::GET($request_url);
+	}
+	my $response = $self->{browser}->request($req);
+	die "$method on $request failed: ".$response->status_line
       unless ( $response->is_success );
 
     return $response;
