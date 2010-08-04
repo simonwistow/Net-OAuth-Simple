@@ -175,9 +175,6 @@ sub new {
 # Validate required constructor params
 sub _check {
     my $self = shift;
-    use Data::Dumper;
-    #die Dumper ($self);
-
 
     foreach my $param ( @required_constructor_params ) {
         unless ( defined $self->{tokens}->{$param} ) {
@@ -419,8 +416,6 @@ sub _store {
     my $key  = shift;
     $self->{$ns}->{$key} = shift if @_;
     return $self->{$ns}->{$key};
-
-    
 }
 
 =head2 authorization_url
@@ -553,13 +548,12 @@ sub xauth_request_access_token {
     my $self = shift;
     my %params = @_;
     my $url = $self->access_token_url;
-	$url =~ s !^http:!https:!; # force https
+    $url =~ s !^http:!https:!; # force https
 
     my %xauth_params = map { $_ => $params{$_} } 
         grep {/^x_auth_/}
         @{Net::OAuth::XauthAccessTokenRequest->required_message_params};
 
-	use Data::Dumper;
     my $access_token_response = $self->_make_request(
         'Net::OAuth::XauthAccessTokenRequest',
         $url, 'POST',
@@ -682,41 +676,42 @@ sub _restricted_request {
 
 sub _make_request {
     my $self    = shift;
-
     my $class   = shift;
     my $url     = shift;
-    my $method  = lc(shift);
-    my %extra   = @_;
+    my $method  = uc(shift);
+    my @extra   = @_;
 
     my $uri   = URI->new($url);
     my %query = $uri->query_form;
     $uri->query_form({});
-
+    
     my $request = $class->new(
         consumer_key     => $self->consumer_key,
         consumer_secret  => $self->consumer_secret,
         request_url      => $uri,
-        request_method   => uc($method),
+        request_method   => $method,
         signature_method => $self->signature_method,
         protocol_version => $self->oauth_1_0a ? Net::OAuth::PROTOCOL_VERSION_1_0A : Net::OAuth::PROTOCOL_VERSION_1_0,
         timestamp        => time,
         nonce            => $self->_nonce,
         extra_params     => \%query,
-        %extra,
+        @extra,
     );
     $request->sign;
     die "COULDN'T VERIFY! Check OAuth parameters.\n"
       unless $request->verify;
 
-    my $params = $request->to_hash;
-     my $req;
-    if ($method eq 'post') {
-         $req = HTTP::Request::Common::POST($uri, Content => $params);
+    my @args    = ();
+    my $req_url = $url;
+    my $params  = $request->to_hash;
+    if ('GET' eq $method || 'PUT' eq $method) {
+        $req_url = URI->new($url);
+        $req_url->query_form(%$params);
     } else {
-         my $request_url = URI->new($url);
-        $request_url->query_form(%$params);
-        $req = HTTP::Request::Common::GET($request_url);
+        @args    = ( HTTP::Headers->new(%$params) );
     }
+    
+    my $req      = HTTP::Request->new( $method => $req_url, @args);
     my $response = $self->{browser}->request($req);
     die "$method on $request failed: ".$response->status_line
       unless ( $response->is_success );

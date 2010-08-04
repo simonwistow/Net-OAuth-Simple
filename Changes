@@ -1,5 +1,8 @@
 Revision history for Net-OAuth-Simple
 
+1.5 2010-08-04
+        Handle PUT and DELETE too thanks to John Goulah
+        
 1.4 2010-03-09
         Better POST handling and xAuth support thanks to Masayoshi Sekimura (RT 55392)
 
