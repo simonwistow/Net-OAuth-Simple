@@ -7,7 +7,7 @@ use CGI::Carp qw(fatalsToBrowser);
 
 binmode STDOUT, ":utf8";
 
-my $CONFIG = "fireeagle_config";
+my $CONFIG = ".fireeagle_config";
 my $cgi    = CGI->new;
 
 # Get the tokens from the params, a config file or wherever 

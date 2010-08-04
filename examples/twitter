@@ -5,7 +5,7 @@ use strict;
 use lib qw(lib);
 use JSON::Any;
 
-my $CONFIG = "twitter_config";
+my $CONFIG = ".twitter_config";
 
 
 binmode STDOUT, ":utf8";
