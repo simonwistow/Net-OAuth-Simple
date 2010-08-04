@@ -1,11 +1,11 @@
-#!/usr/bin/perl -w
+#!perl -w
 
 
 use strict;
 use lib qw(lib);
 use JSON::Any;
 
-my $CONFIG = "tmpconfig";
+my $CONFIG = "twitter_config";
 
 
 binmode STDOUT, ":utf8";
@@ -62,8 +62,6 @@ sub get_dms {
 
 
 sub get_tokens {
-    my @return;
-    # This also needs to try reading from a config file
     my %tokens = Twitter->load_tokens($CONFIG);
     while (@ARGV && $ARGV[0] =~ m!^(\w+)\=(\w+)$!) {
         $tokens{$1} = $2;
