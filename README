@@ -28,6 +28,9 @@ You can also look for information at:
     Search CPAN
         http://search.cpan.org/dist/Net-OAuth-Simple/
 
+EXAMPLES
+
+There are example Twitter and Twitter xAuth 'desktop' apps and a FireEagle OAuth 1.0a web app in the examples directory.
 
 COPYRIGHT AND LICENCE
 

@@ -867,6 +867,11 @@ services API documentation for the possible list of I<scope> parameter value.
 If C<Math::Random::MT> is installed then any nonces generated will use a 
 Mersenne Twiser instead of Perl's built in randomness function.
 
+=head1 EXAMPLES
+
+There are example Twitter and Twitter xAuth 'desktop' apps and a FireEagle OAuth 1.0a web app 
+in the examples directory of the distribution.
+
 =head1 BUGS
 
 Non known
