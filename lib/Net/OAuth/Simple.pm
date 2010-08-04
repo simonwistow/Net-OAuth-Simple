@@ -192,7 +192,7 @@ sub _check {
     }
     
     return $self->_error("browser must be a LWP::UserAgent")
-        unless blessed $self->{browser} && $self->{browser}->isa('LWP::UserAgent'));
+        unless blessed $self->{browser} && $self->{browser}->isa('LWP::UserAgent');
 }
 
 =head2 oauth_1_0a 
