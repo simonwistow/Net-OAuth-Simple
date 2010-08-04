@@ -159,7 +159,7 @@ You can pass in your own User Agent by using the key C<browser>.
 
 If you pass in C<return_undef_on_error> then instead of C<die>-ing on error  
 methods will return undef instead and the error can be retrieved using the 
-C<error()> method. See the section on B<ERROR HANDLING>.
+C<last_error()> method. See the section on B<ERROR HANDLING>.
 
 =cut
 
@@ -735,14 +735,14 @@ sub _error {
     my $self = shift;
     my $mess = shift;
     if ($self->{return_undef_on_error}) {
-        $self->{_current_error} = $mess;
+        $self->{_last_error} = $mess;
     } else {
         croak $mess;
     }
     return undef;
 }
 
-=head2 error
+=head2 last_error
 
 Get the last error message.
 
@@ -751,9 +751,9 @@ Only works if C<return_undef_on_error> was passed in to the constructor.
 See the section on B<ERROR HANDLING>.
 
 =cut
-sub current_error {
+sub last_error {
     my $self = shift;
-    return $self->{_current_error};
+    return $self->{_last_error};
 }
 
 =head2 load_tokens <file>
@@ -820,7 +820,7 @@ This is still the default behaviour however if you now pass
     
 into the constructor then all methods will return undef on error instead.
 
-The error message is accessible via the C<error()> method.
+The error message is accessible via the C<last_error()> method.
 
 =head1 GOOGLE'S SCOPE PARAMETER
 
