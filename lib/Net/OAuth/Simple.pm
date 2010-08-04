@@ -2,7 +2,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "1.4";
+our $VERSION = "1.5";
 
 use URI;
 use LWP;
