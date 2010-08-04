@@ -473,7 +473,7 @@ C<get_authorization_url> first.
 
 Returns the access token and access token secret but also sets
 them internally so that after calling this method you can
-immediately call C<location> or C<update_location>.
+immediately call a restricted method.
 
 If you pass in a hash of params then they will added as parameters to the URL.
 
