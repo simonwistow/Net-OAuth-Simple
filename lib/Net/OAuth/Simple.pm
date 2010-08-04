@@ -10,6 +10,7 @@ use CGI;
 use HTTP::Request::Common ();
 use Carp;
 use Net::OAuth;
+use Scalar::Util qw(blessed);
 require Net::OAuth::Request;
 require Net::OAuth::RequestTokenRequest;
 require Net::OAuth::AccessTokenRequest;
@@ -154,6 +155,12 @@ If you pass in a key C<protocol_version> with a value equal to B<1.0a> then
 the newest version of the OAuth protocol will be used. A value equal to B<1.0> will 
 mean the old version will be used. Defaults to B<1.0a>
 
+You can pass in your own User Agent by using the key C<browser>.
+
+If you pass in C<return_undef_on_error> then instead of C<die>-ing on error  
+methods will return undef instead and the error can be retrieved using the 
+C<error()> method. See the section on B<ERROR HANDLING>.
+
 =cut
 
 sub new {
@@ -161,12 +168,14 @@ sub new {
     my %params = @_;
     $params{protocol_version} ||= '1.0a';
     my $client = bless \%params, $class;
+    
+    # Set up LibWWWPerl for HTTP requests
+    $client->{browser} ||= LWP::UserAgent->new;
 
     # Verify arguments
     $client->_check;
 
-    # Set up LibWWWPerl for HTTP requests
-    $client->{browser} = LWP::UserAgent->new;
+   
 
     # Client Object
     return $client;
@@ -178,9 +187,12 @@ sub _check {
 
     foreach my $param ( @required_constructor_params ) {
         unless ( defined $self->{tokens}->{$param} ) {
-            die "Missing required parameter '$param'";
+            return $self->_error("Missing required parameter '$param'");
         }
     }
+    
+    return $self->_error("browser must be a LWP::UserAgent")
+        unless blessed $self->{browser} && $self->{browser}->isa('LWP::UserAgent'));
 }
 
 =head2 oauth_1_0a 
@@ -489,7 +501,7 @@ sub request_access_token {
     
     if ($self->oauth_1_0a) {
         $params{verifier} = $self->verifier                             unless defined $params{verifier};
-        die "You must pass a verified parameter when using OAuth v1.0a" unless defined $params{verifier};
+        return $self->_error("You must pass a verified parameter when using OAuth v1.0a") unless defined $params{verifier};
         
     }
     
@@ -518,7 +530,7 @@ sub _decode_tokens {
 
     delete $self->{tokens}->{$_} for qw(request_token request_token_secret verifier);
 
-    die "ERROR: $url did not reply with an access token"
+    return $self->_error("ERROR: $url did not reply with an access token")
       unless ( $self->access_token && $self->access_token_secret );
 
     return ( $self->access_token, $self->access_token_secret );
@@ -581,7 +593,7 @@ sub request_request_token {
     
     if ($self->oauth_1_0a) {
         $params{callback} = $self->callback                             unless defined $params{callback};
-        die "You must pass a callback parameter when using OAuth v1.0a" unless defined $params{callback};
+        return $self->_error("You must pass a callback parameter when using OAuth v1.0a") unless defined $params{callback};
     }
           
     my $request_token_response = $self->_make_request(
@@ -589,7 +601,7 @@ sub request_request_token {
         $url, 'GET', 
         %params);
 
-    die "GET for $url failed: ".$request_token_response->status_line
+    return $self->_error("GET for $url failed: ".$request_token_response->status_line)
       unless ( $request_token_response->is_success );
 
     # Cast response into CGI query for EZ parameter decoding
@@ -601,7 +613,7 @@ sub request_request_token {
     $self->request_token_secret($request_token_response_query->param('oauth_token_secret'));
     $self->callback_confirmed($request_token_response_query->param('oauth_callback_confirmed'));
     
-    die "Response does not confirm to OAuth1.0a. oauth_callback_confirmed not received"
+    return $self->_error("Response does not confirm to OAuth1.0a. oauth_callback_confirmed not received")
      if $self->oauth_1_0a && !$self->callback_confirmed;
 
 }
@@ -636,7 +648,7 @@ Any extra parameters can be passed in as a hash.
 sub make_restricted_request {
     my $self     = shift;
 
-    croak $UNAUTHORIZED unless $self->authorized;
+    return $self->_error($UNAUTHORIZED) unless $self->authorized;
 
     return $self->_restricted_request( $self->access_token, $self->access_token_secret, @_ );
 }
@@ -698,7 +710,7 @@ sub _make_request {
         @extra,
     );
     $request->sign;
-    die "COULDN'T VERIFY! Check OAuth parameters.\n"
+    return $self->_error("COULDN'T VERIFY! Check OAuth parameters.")
       unless $request->verify;
 
     my @args    = ();
@@ -713,10 +725,35 @@ sub _make_request {
     
     my $req      = HTTP::Request->new( $method => $req_url, @args);
     my $response = $self->{browser}->request($req);
-    die "$method on $request failed: ".$response->status_line
+    return $self->_error("$method on $request failed: ".$response->status_line)
       unless ( $response->is_success );
 
     return $response;
+}
+
+sub _error {
+    my $self = shift;
+    my $mess = shift;
+    if ($self->{return_undef_on_error}) {
+        $self->{_current_error} = $mess;
+    } else {
+        croak $mess;
+    }
+    return undef;
+}
+
+=head2 error
+
+Get the last error message.
+
+Only works if C<return_undef_on_error> was passed in to the constructor.
+
+See the section on B<ERROR HANDLING>.
+
+=cut
+sub current_error {
+    my $self = shift;
+    return $self->{_current_error};
 }
 
 =head2 load_tokens <file>
@@ -771,6 +808,19 @@ sub save_tokens {
     }
     close($fh);
 }
+
+=head1 ERROR HANDLING
+
+Originally this module would die upon encountering an error (inheriting behaviour 
+from the original Yahoo! code).
+
+This is still the default behaviour however if you now pass 
+
+    return_undef_on_error => 1
+    
+into the constructor then all methods will return undef on error instead.
+
+The error message is accessible via the C<error()> method.
 
 =head1 GOOGLE'S SCOPE PARAMETER
 
