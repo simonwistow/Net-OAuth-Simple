@@ -853,7 +853,7 @@ Here's an example class that uses Google's Portable Contacts API via OAuth:
     my $oauth = Net::AppUsingGoogleOAuth->new(%tokens);
 
     # Web application
-    $app->redirect( $oauth->get_authorization_url(oauth_callback => "http://you.example.com/oauth/callback") );
+    $app->redirect( $oauth->get_authorization_url( callback => "http://you.example.com/oauth/callback") );
 
     # Desktop application
     print "Open the URL and come back once you're authenticated!\n",
