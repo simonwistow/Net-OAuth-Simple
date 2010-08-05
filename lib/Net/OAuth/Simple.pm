@@ -725,7 +725,7 @@ sub _make_request {
     
     my $req      = HTTP::Request->new( $method => $req_url, @args);
     my $response = $self->{browser}->request($req);
-    return $self->_error("$method on $request failed: ".$response->status_line)
+    return $self->_error("$method on $req_url failed: ".$response->status_line)
       unless ( $response->is_success );
 
     return $response;
