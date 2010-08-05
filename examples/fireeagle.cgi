@@ -66,7 +66,7 @@ die "We should never get here\n";
 sub location {
     print $cgi->header(-charset=>'utf-8');
     print head("Your location");
-    my $obj  = $app->location(format => 'json');
+    my $obj  = $app->location();
     my $what = $obj->{user}->{location_hierarchy}->[0];
     printf("%s (accuracy level: %s)<br />", $what->{name}, $what->{level_name});
     print foot();
