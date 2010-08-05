@@ -664,7 +664,7 @@ Any extra parameters can be passed in as a hash.
 sub make_general_request {
     my $self  = shift;
 
-    croak $UNAUTHORIZED unless $self->authorized_general_token;
+    $self->_error($UNAUTHORIZED) unless $self->authorized_general_token;
 
     return $self->_restricted_request( $self->general_token, $self->general_token_secret, @_ );
 }
