@@ -27,7 +27,6 @@ BEGIN {
 our @required_constructor_params = qw(consumer_key consumer_secret);
 our @access_token_params         = qw(access_token access_token_secret);
 our @general_token_params        = qw(general_token general_token_secret);
-our $UNAUTHORIZED                = "Unauthorized.";
 
 =head1 NAME
 
@@ -530,7 +529,7 @@ sub _decode_tokens {
 
     delete $self->{tokens}->{$_} for qw(request_token request_token_secret verifier);
 
-    return $self->_error("ERROR: $url did not reply with an access token")
+    return $self->_error("$url did not reply with an access token")
       unless ( $self->access_token && $self->access_token_secret );
 
     return ( $self->access_token, $self->access_token_secret );
@@ -648,7 +647,7 @@ Any extra parameters can be passed in as a hash.
 sub make_restricted_request {
     my $self     = shift;
 
-    return $self->_error($UNAUTHORIZED) unless $self->authorized;
+    return $self->_error("This restricted request is not authorized") unless $self->authorized;
 
     return $self->_restricted_request( $self->access_token, $self->access_token_secret, @_ );
 }
@@ -664,7 +663,7 @@ Any extra parameters can be passed in as a hash.
 sub make_general_request {
     my $self  = shift;
 
-    $self->_error($UNAUTHORIZED) unless $self->authorized_general_token;
+    return $self->_error("This general request is not authorized") unless $self->authorized_general_token;
 
     return $self->_restricted_request( $self->general_token, $self->general_token_secret, @_ );
 }
@@ -710,7 +709,7 @@ sub _make_request {
         @extra,
     );
     $request->sign;
-    return $self->_error("COULDN'T VERIFY! Check OAuth parameters.")
+    return $self->_error("Couldn't verify request! Check OAuth parameters.")
       unless $request->verify;
 
     my @args    = ();
@@ -725,7 +724,7 @@ sub _make_request {
     
     my $req      = HTTP::Request->new( $method => $req_url, @args);
     my $response = $self->{browser}->request($req);
-    return $self->_error("$method on $req_url failed: ".$response->status_line)
+    return $self->_error("$method on ".$request->normalized_request_url." failed: ".$response->status_line." - ".$response->content)
       unless ( $response->is_success );
 
     return $response;
@@ -884,7 +883,7 @@ The latest code for this module can be found at
 
 =head1 AUTHOR
 
-Simon Wistow, C<<simon@thegestalt.org >>
+Simon Wistow, C<<simon@thegestalt.org>>
 
 =head1 BUGS
 
