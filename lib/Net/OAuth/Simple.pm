@@ -2,7 +2,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "1.5";
+our $VERSION = "1.6";
 
 use URI;
 use LWP;
@@ -507,7 +507,7 @@ sub request_access_token {
     
     my $access_token_response = $self->_make_request(
         'Net::OAuth::AccessTokenRequest',
-        $url, 'GET',
+        $url, 'POST',
         %params,
     );
 
@@ -597,7 +597,7 @@ sub request_request_token {
           
     my $request_token_response = $self->_make_request(
         'Net::OAuth::RequestTokenRequest',
-        $url, 'GET', 
+        $url, 'POST', 
         %params);
 
     return $self->_error("GET for $url failed: ".$request_token_response->status_line)
@@ -712,17 +712,9 @@ sub _make_request {
     return $self->_error("Couldn't verify request! Check OAuth parameters.")
       unless $request->verify;
 
-    my @args    = ();
-    my $req_url = $url;
     my $params  = $request->to_hash;
-    if ('GET' eq $method || 'PUT' eq $method) {
-        $req_url = URI->new($url);
-        $req_url->query_form(%$params);
-    } else {
-        @args    = ( HTTP::Headers->new(%$params) );
-    }
-    
-    my $req      = HTTP::Request->new( $method => $req_url, @args);
+    $uri->query_form(%$params);
+    my $req      = HTTP::Request->new( $method => "$uri");
     my $response = $self->{browser}->request($req);
     return $self->_error("$method on ".$request->normalized_request_url." failed: ".$response->status_line." - ".$response->content)
       unless ( $response->is_success );
