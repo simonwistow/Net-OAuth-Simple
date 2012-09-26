@@ -2,7 +2,7 @@ package Net::OAuth::Simple;
 
 use warnings;
 use strict;
-our $VERSION = "1.6";
+our $VERSION = "1.7";
 
 use URI;
 use LWP;
@@ -11,6 +11,8 @@ use HTTP::Request::Common ();
 use Carp;
 use Net::OAuth;
 use Scalar::Util qw(blessed);
+use Digest::SHA;
+use File::Basename;
 require Net::OAuth::Request;
 require Net::OAuth::RequestTokenRequest;
 require Net::OAuth::AccessTokenRequest;
@@ -611,6 +613,10 @@ sub request_request_token {
     $self->request_token($request_token_response_query->param('oauth_token'));
     $self->request_token_secret($request_token_response_query->param('oauth_token_secret'));
     $self->callback_confirmed($request_token_response_query->param('oauth_callback_confirmed'));
+
+    # Hack to deal with bug in older versions of oauth-php (See https://code.google.com/p/oauth-php/issues/detail?id=60)
+    $self->callback_confirmed($request_token_response_query->param('oauth_callback_accepted'))
+      unless $self->callback_confirmed;
     
     return $self->_error("Response does not confirm to OAuth1.0a. oauth_callback_confirmed not received")
      if $self->oauth_1_0a && !$self->callback_confirmed;
@@ -695,6 +701,42 @@ sub _make_request {
     my $uri   = URI->new($url);
     my %query = $uri->query_form;
     $uri->query_form({});
+
+
+    my $content;
+    my $filename;
+    if ('PUT' eq $method) {
+      # Get the content (goes in the body), and hash the content for inclusion in the message
+      my %params = @extra;
+      $filename = delete $params{extra_params}->{filename};
+
+      return $self->_error('Missing required parameter $filename') unless $filename;
+
+      # Slurp the file from above
+      my $content = "";
+      $self->_read_file( $filename, sub { $content .= shift } ) ;
+      ($filename) = fileparse($filename);
+
+
+      # Net::OAuth doesn't seem to handle body hash, so do it ourselves
+
+      # Per http://oauth.googlecode.com/svn/spec/ext/body_hash/1.0/oauth-bodyhash.html#parameter
+      # If the OAuth signature method is HMAC-SHA1 or RSA-SHA1, SHA1 MUST be used as the body hash algorithm
+      # No discussion of other signature methods, but the draft spec for OAuth2 predictably says that SHA256
+      # should be used for HMAC-SHA256
+
+      if ($self->signature_method eq 'HMAC-SHA1' || $self->signature_method eq 'RSA-SHA1') {
+        $params{body_hash} = Digest::SHA::sha1_hex($content);
+      } elsif ($self->signature_method eq 'HMAC-SHA256') {
+        $params{body_hash} = Digest::SHA::sha256_hex($content);
+      } else {
+        return $self->_error("Unknown signature method: ".$self->signature_method);
+      }
+
+      @extra = %params;
+    }
+
+
     
     my $request = $class->new(
         consumer_key     => $self->consumer_key,
@@ -708,13 +750,28 @@ sub _make_request {
         extra_params     => \%query,
         @extra,
     );
+    $request->add_optional_message_params('body_hash') if 'PUT' eq $method;
     $request->sign;
     return $self->_error("Couldn't verify request! Check OAuth parameters.")
       unless $request->verify;
+     
+    my $req_url = ('GET' eq $method || 'DELETE' eq $method) ? $request->to_url() : $url;
 
-    my $params  = $request->to_hash;
-    $uri->query_form(%$params);
-    my $req      = HTTP::Request->new( $method => "$uri");
+    my $req = HTTP::Request->new( $method => $req_url);
+
+    if ('PUT' eq $method) {
+      $req->header('Authorization' => $request->to_authorization_header(""));
+      $req->header('Content-disposition' => qq!attachment; filename="$filename"!);
+      $req->content($content);
+    }
+
+    if ('POST' eq $method) {
+      # "@extra" params are the ones that don't start with oath_ in the hash
+      # User passed them, they must want us to actually send them, huh?
+      $request->add_optional_message_params($_) for grep { ! /^oauth_/ } keys %{$request->to_hash};
+      $req->content_type('application/x-www-form-urlencoded');
+      $req->content($request->to_post_body);
+    }
     my $response = $self->{browser}->request($req);
     return $self->_error("$method on ".$request->normalized_request_url." failed: ".$response->status_line." - ".$response->content)
       unless ( $response->is_success );
@@ -763,8 +820,8 @@ sub load_tokens {
     my %tokens = ();
     return %tokens unless -f $file;
 
-    open(my $fh, $file) || die "Couldn't open $file: $!\n";
-    while (<$fh>) {
+    $class->_read_file($file, sub {
+        $_ = shift;
         chomp;
         next if /^#/;
         next if /^\s*$/;
@@ -772,8 +829,7 @@ sub load_tokens {
         s/(^\s*|\s*$)//g;
         my ($key, $val) = split /\s*=\s*/, $_, 2;
         $tokens{$key} = $val;
-    }
-    close($fh);
+    });
     return %tokens;
 }
 
@@ -796,6 +852,18 @@ sub save_tokens {
     foreach my $key (sort keys %tokens) {
         my $pad = " "x($max-length($key));
         print $fh "$key ${pad}= ".$tokens{$key}."\n";
+    }
+    close($fh);
+}
+
+sub _read_file {
+    my $self = shift;
+    my $file = shift;
+    my $sub  = shift;
+    
+    open(my $fh, $file) || die "Couldn't open $file: $!\n";
+    while (<$fh>) {
+        $sub->($_) if $sub;
     }
     close($fh);
 }
