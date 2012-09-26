@@ -13,3 +13,4 @@ t/boilerplate.t
 t/browser.t
 t/pod-coverage.t
 t/pod.t
+META.json
