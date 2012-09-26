@@ -14,6 +14,7 @@ my $build = Module::Build
                           'URI'                  => 0,
                         },
          create_makefile_pl => 'traditional',
+         configure_requires => { 'Module::Build' => 0.38 }
        );
 
 $build->create_build_script;
