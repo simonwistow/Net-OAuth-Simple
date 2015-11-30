@@ -10,7 +10,7 @@ binmode STDOUT, ":utf8";
 my $CONFIG = ".fireeagle_config";
 my $cgi    = CGI->new;
 
-# Get the tokens from the params, a config file or wherever 
+# Get the tokens from the params, a config file or wherever
 my %tokens = get_tokens();
 my $app    = FireEagle->new(%tokens);
 
@@ -33,7 +33,7 @@ unless ($cgi->param('oauth_token')) {
     print "<a href='$url'>Authorize</a>\n";
     print foot();
     exit 0;
-    
+
 # We've been given the request token
 } elsif ($cgi->param('oauth_token')) {
     foreach my $name (qw(request_token request_token_secret)) {
@@ -41,7 +41,7 @@ unless ($cgi->param('oauth_token')) {
         $app->$name($value);
     }
     # Paranoid checking
-    die "Request tokens don't match\n" 
+    die "Request tokens don't match\n"
         unless $app->request_token eq $cgi->param('oauth_token');
 
     # Set the verifier
@@ -50,10 +50,10 @@ unless ($cgi->param('oauth_token')) {
 
     # Get the access token and save the values
     $app->request_access_token;
-  
+
     # Again, this is horrifically insecure
     save_tokens($app);
-  
+
     # Either redirect to clear the cruft from the headers ...
     #print $cgi->redirect($cgi->url);
     # ... or print the location ...
@@ -71,7 +71,7 @@ sub location {
     printf("%s (accuracy level: %s)<br />", $what->{name}, $what->{level_name});
     print foot();
     exit 0;
-} 
+}
 
 sub head {
     my $title = shift;
@@ -84,7 +84,7 @@ sub foot {
 
 sub get_tokens {
     my %tokens = FireEagle->load_tokens($CONFIG);
-    foreach my $param ($cgi->param) {    
+    foreach my $param ($cgi->param) {
         $tokens{$param} = $cgi->param($param);
     }
     return %tokens;
@@ -106,7 +106,7 @@ use JSON::Any;
 sub new {
     my $class  = shift;
     my %tokens = @_;
-    return $class->SUPER::new( tokens => \%tokens, 
+    return $class->SUPER::new( tokens => \%tokens,
                                protocol_version => '1.0a',
                                urls   => {
                                     authorization_url => 'https://fireeagle.yahoo.net/oauth/authorize',

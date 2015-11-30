@@ -18,6 +18,7 @@ require Net::OAuth::RequestTokenRequest;
 require Net::OAuth::AccessTokenRequest;
 require Net::OAuth::ProtectedResourceRequest;
 require Net::OAuth::XauthAccessTokenRequest;
+require Net::OAuth::UserAuthRequest;
 
 BEGIN {
     eval {  require Math::Random::MT };
@@ -48,7 +49,7 @@ for you.
     sub new {
         my $class  = shift;
         my %tokens = @_;
-        return $class->SUPER::new( tokens => \%tokens, 
+        return $class->SUPER::new( tokens => \%tokens,
                                    protocol_version => '1.0a',
                                    urls   => {
                                         authorization_url => ...,
@@ -67,22 +68,22 @@ for you.
         my $self         = shift;
         my $url          = shift;
         my %extra_params = @_;
-        return $self->make_restricted_request($url, 'POST', %extra_params);    
+        return $self->make_restricted_request($url, 'POST', %extra_params);
     }
     1;
 
 
 Then in your main app you need to do
 
-    # Get the tokens from the command line, a config file or wherever 
-    my %tokens  = get_tokens(); 
+    # Get the tokens from the command line, a config file or wherever
+    my %tokens  = get_tokens();
     my $app     = Net::AppThatUsesOAuth->new(%tokens);
 
     # Check to see we have a consumer key and secret
     unless ($app->consumer_key && $app->consumer_secret) {
         die "You must go get a consumer key and secret from App\n";
-    } 
-    
+    }
+
     # If the app is authorized (i.e has an access token and secret)
     # Then look at a restricted resourse
     if ($app->authorized) {
@@ -102,10 +103,10 @@ Then in your main app you need to do
     # Now save those values
 
 
-Note the flow will be somewhat different for web apps since the request token 
+Note the flow will be somewhat different for web apps since the request token
 and secret will need to be saved whilst the user visits the authorization url.
 
-For examples go look at the C<Net::FireEagle> module and the C<fireeagle> command 
+For examples go look at the C<Net::FireEagle> module and the C<fireeagle> command
 line script that ships with it. Also in the same distribution in the C<examples/>
 directory is a sample web app.
 
@@ -128,7 +129,7 @@ must be a hash ref with the keys:
 
 =back
 
-Then, when you have your per-use access token and secret you 
+Then, when you have your per-use access token and secret you
 can supply
 
 =over 4
@@ -139,8 +140,8 @@ can supply
 
 =back
 
-Another key of the hash must be C<urls>, the value of which must 
-be a hash ref with the keys 
+Another key of the hash must be C<urls>, the value of which must
+be a hash ref with the keys
 
 =over 4
 
@@ -152,14 +153,14 @@ be a hash ref with the keys
 
 =back
 
-If you pass in a key C<protocol_version> with a value equal to B<1.0a> then 
-the newest version of the OAuth protocol will be used. A value equal to B<1.0> will 
+If you pass in a key C<protocol_version> with a value equal to B<1.0a> then
+the newest version of the OAuth protocol will be used. A value equal to B<1.0> will
 mean the old version will be used. Defaults to B<1.0a>
 
 You can pass in your own User Agent by using the key C<browser>.
 
-If you pass in C<return_undef_on_error> then instead of C<die>-ing on error  
-methods will return undef instead and the error can be retrieved using the 
+If you pass in C<return_undef_on_error> then instead of C<die>-ing on error
+methods will return undef instead and the error can be retrieved using the
 C<last_error()> method. See the section on B<ERROR HANDLING>.
 
 =cut
@@ -169,14 +170,12 @@ sub new {
     my %params = @_;
     $params{protocol_version} ||= '1.0a';
     my $client = bless \%params, $class;
-    
+
     # Set up LibWWWPerl for HTTP requests
     $client->{browser} ||= LWP::UserAgent->new;
 
     # Verify arguments
     $client->_check;
-
-   
 
     # Client Object
     return $client;
@@ -191,14 +190,14 @@ sub _check {
             return $self->_error("Missing required parameter '$param'");
         }
     }
-    
+
     return $self->_error("browser must be a LWP::UserAgent")
         unless blessed $self->{browser} && $self->{browser}->isa('LWP::UserAgent');
 }
 
-=head2 oauth_1_0a 
+=head2 oauth_1_0a
 
-Whether or not we're using 1.0a version of OAuth (necessary for, 
+Whether or not we're using 1.0a version of OAuth (necessary for,
 amongst others, FireEagle)
 
 =cut
@@ -225,7 +224,7 @@ sub authorized {
 
 =head2 signature_method [method]
 
-The signature method to use. 
+The signature method to use.
 
 Defaults to HMAC-SHA1
 
@@ -444,7 +443,7 @@ sub authorization_url {
 }
 
 
-=head2 request_token_url 
+=head2 request_token_url
 
 Get the url to obtain a request token as a URI object.
 
@@ -454,7 +453,7 @@ sub request_token_url {
     return $self->_url('request_token_url', @_);
 }
 
-=head2 access_token_url 
+=head2 access_token_url
 
 Get the url to obtain an access token as a URI object.
 
@@ -496,17 +495,17 @@ sub request_access_token {
     my $self   = shift;
     my %params = @_;
     my $url    = $self->access_token_url;
-    
+
     $params{token}        = $self->request_token        unless defined $params{token};
     $params{token_secret} = $self->request_token_secret unless defined $params{token_secret};
-    
+
     if ($self->oauth_1_0a) {
         $params{verifier} = $self->verifier                             unless defined $params{verifier};
         return $self->_error("You must pass a verified parameter when using OAuth v1.0a") unless defined $params{verifier};
-        
+
     }
-    
-    
+
+
     my $access_token_response = $self->_make_request(
         'Net::OAuth::AccessTokenRequest',
         $url, 'POST',
@@ -535,7 +534,7 @@ sub _decode_tokens {
       unless ( $self->access_token && $self->access_token_secret );
 
     return ( $self->access_token, $self->access_token_secret );
-    
+
 }
 
 =head2 xauth_request_access_token [param[s]]
@@ -544,7 +543,7 @@ The same as C<request_access_token> but for xAuth.
 
 For more information on xAuth see
 
-    http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-oauth-access_token-for-xAuth  
+    http://apiwiki.twitter.com/Twitter-REST-API-Method%3A-oauth-access_token-for-xAuth
 
 You must pass in the parameters
 
@@ -563,7 +562,7 @@ sub xauth_request_access_token {
     my $url = $self->access_token_url;
     $url =~ s !^http:!https:!; # force https
 
-    my %xauth_params = map { $_ => $params{$_} } 
+    my %xauth_params = map { $_ => $params{$_} }
         grep {/^x_auth_/}
         @{Net::OAuth::XauthAccessTokenRequest->required_message_params};
 
@@ -590,16 +589,16 @@ If you pass in a hash of params then they will added as parameters to the URL.
 sub request_request_token {
     my $self   = shift;
     my %params = @_;
-    my $url    = $self->request_token_url; 
-    
+    my $url    = $self->request_token_url;
+
     if ($self->oauth_1_0a) {
         $params{callback} = $self->callback                             unless defined $params{callback};
         return $self->_error("You must pass a callback parameter when using OAuth v1.0a") unless defined $params{callback};
     }
-          
+
     my $request_token_response = $self->_make_request(
         'Net::OAuth::RequestTokenRequest',
-        $url, 'POST', 
+        $url, 'GET',
         %params);
 
     return $self->_error("GET for $url failed: ".$request_token_response->status_line)
@@ -617,7 +616,7 @@ sub request_request_token {
     # Hack to deal with bug in older versions of oauth-php (See https://code.google.com/p/oauth-php/issues/detail?id=60)
     $self->callback_confirmed($request_token_response_query->param('oauth_callback_accepted'))
       unless $self->callback_confirmed;
-    
+
     return $self->_error("Response does not confirm to OAuth1.0a. oauth_callback_confirmed not received")
      if $self->oauth_1_0a && !$self->callback_confirmed;
 
@@ -638,9 +637,10 @@ sub get_authorization_url {
     if (!defined $self->request_token) {
         $self->request_request_token(%params);
     }
-    $params{oauth_token} = $self->request_token;
+    #$params{oauth_token}     = $self->request_token;
     $url->query_form(%params);
-    return $url;
+    my $req = $self->_build_request('Net::OAuth::UserAuthRequest', $url, "GET");
+    return $req->normalized_request_url;
 }
 
 =head2 make_restricted_request <url> <HTTP method> [extra[s]]
@@ -660,7 +660,7 @@ sub make_restricted_request {
 
 =head2 make_general_request <url> <HTTP method> [extra[s]]
 
-Make a request to C<url> using the given HTTP method using 
+Make a request to C<url> using the given HTTP method using
 the general purpose tokens.
 
 Any extra parameters can be passed in as a hash.
@@ -692,6 +692,22 @@ sub _restricted_request {
 }
 
 sub _make_request {
+    my $self    = shift;
+    my $class   = shift;
+    my $url     = shift;
+    my $method  = uc(shift);
+    my @extra   = @_;
+
+    my $request  = $self->_build_request($class, $url, $method, @extra);
+    my $response = $self->{browser}->request($request);
+    return $self->_error("$method on ".$request->normalized_request_url." failed: ".$response->status_line." - ".$response->content)
+      unless ( $response->is_success );
+
+    return $response;
+}
+
+use Data::Dumper;
+sub _build_request {
     my $self    = shift;
     my $class   = shift;
     my $url     = shift;
@@ -737,7 +753,7 @@ sub _make_request {
     }
 
 
-    
+
     my $request = $class->new(
         consumer_key     => $self->consumer_key,
         consumer_secret  => $self->consumer_secret,
@@ -754,7 +770,7 @@ sub _make_request {
     $request->sign;
     return $self->_error("Couldn't verify request! Check OAuth parameters.")
       unless $request->verify;
-     
+
     my $req_url = ('GET' eq $method || 'DELETE' eq $method) ? $request->to_url() : $url;
 
     my $req = HTTP::Request->new( $method => $req_url);
@@ -772,12 +788,10 @@ sub _make_request {
       $req->content_type('application/x-www-form-urlencoded');
       $req->content($request->to_post_body);
     }
-    my $response = $self->{browser}->request($req);
-    return $self->_error("$method on ".$request->normalized_request_url." failed: ".$response->status_line." - ".$response->content)
-      unless ( $response->is_success );
 
-    return $response;
+    return $req;
 }
+
 
 sub _error {
     my $self = shift;
@@ -808,7 +822,7 @@ sub last_error {
 
 A convenience method for loading tokens from a config file.
 
-Returns a hash with the token names suitable for passing to 
+Returns a hash with the token names suitable for passing to
 C<new()>.
 
 Returns an empty hash if the file doesn't exist.
@@ -860,7 +874,7 @@ sub _read_file {
     my $self = shift;
     my $file = shift;
     my $sub  = shift;
-    
+
     open(my $fh, $file) || die "Couldn't open $file: $!\n";
     while (<$fh>) {
         $sub->($_) if $sub;
@@ -870,23 +884,23 @@ sub _read_file {
 
 =head1 ERROR HANDLING
 
-Originally this module would die upon encountering an error (inheriting behaviour 
+Originally this module would die upon encountering an error (inheriting behaviour
 from the original Yahoo! code).
 
-This is still the default behaviour however if you now pass 
+This is still the default behaviour however if you now pass
 
     return_undef_on_error => 1
-    
+
 into the constructor then all methods will return undef on error instead.
 
 The error message is accessible via the C<last_error()> method.
 
 =head1 GOOGLE'S SCOPE PARAMETER
 
-Google's OAuth API requires the non-standard C<scope> parameter to be set 
-in C<request_token_url>, and you also explicitly need to pass an C<oauth_callback> 
-to C<get_authorization_url()> method, so that you can direct the user to your site 
-if you're authenticating users in Web Application mode. Otherwise Google will let 
+Google's OAuth API requires the non-standard C<scope> parameter to be set
+in C<request_token_url>, and you also explicitly need to pass an C<oauth_callback>
+to C<get_authorization_url()> method, so that you can direct the user to your site
+if you're authenticating users in Web Application mode. Otherwise Google will let
 user grant acesss as a desktop app mode and doesn't redirect users back.
 
 Here's an example class that uses Google's Portable Contacts API via OAuth:
@@ -899,7 +913,7 @@ Here's an example class that uses Google's Portable Contacts API via OAuth:
         my $class  = shift;
         my %tokens = @_;
         return $class->SUPER::new(
-            tokens => \%tokens, 
+            tokens => \%tokens,
             urls   => {
                 request_token_url => "https://www.google.com/accounts/OAuthGetRequestToken?scope=http://www-opensocial.googleusercontent.com/api/people",
                 authorization_url => "https://www.google.com/accounts/OAuthAuthorizeToken",
@@ -918,17 +932,17 @@ Here's an example class that uses Google's Portable Contacts API via OAuth:
     print "Open the URL and come back once you're authenticated!\n",
         $oauth->get_authorization_url;
 
-See L<http://code.google.com/apis/accounts/docs/OAuth.html> and other 
+See L<http://code.google.com/apis/accounts/docs/OAuth.html> and other
 services API documentation for the possible list of I<scope> parameter value.
 
 =head1 RANDOMNESS
 
-If C<Math::Random::MT> is installed then any nonces generated will use a 
+If C<Math::Random::MT> is installed then any nonces generated will use a
 Mersenne Twiser instead of Perl's built in randomness function.
 
 =head1 EXAMPLES
 
-There are example Twitter and Twitter xAuth 'desktop' apps and a FireEagle OAuth 1.0a web app 
+There are example Twitter and Twitter xAuth 'desktop' apps and a FireEagle OAuth 1.0a web app
 in the examples directory of the distribution.
 
 =head1 BUGS
