@@ -14,7 +14,12 @@ my $build = Module::Build
                           'URI'                  => 0,
                         },
          create_makefile_pl => 'traditional',
-         configure_requires => { 'Module::Build' => 0.38 }
+         configure_requires => { 'Module::Build' => 0.38 },
+         meta_merge => {
+            resources => {
+              repository => 'https://github.com/simonwistow/Net-OAuth-Simple',
+            },
+         },
        );
 
 $build->create_build_script;

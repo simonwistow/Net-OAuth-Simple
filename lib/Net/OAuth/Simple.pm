@@ -953,7 +953,7 @@ Non known
 
 The latest code for this module can be found at
 
-    https://svn.unixbeard.net/simon/Net-OAuth-Simple
+    https://github.com/simonwistow/Net-OAuth-Simple
 
 =head1 AUTHOR
 
